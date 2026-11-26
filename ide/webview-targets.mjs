@@ -22,11 +22,14 @@ function wrapperUrl(value){
     return u.protocol==='vscode-webview:'&&/^[a-z0-9-]+$/i.test(u.hostname)&&u.pathname==='/index.html'&&!u.username&&!u.password&&!u.port&&!u.hash&&GUID.test(id||'')&&u.searchParams.get('platform')==='electron'&&u.searchParams.get('purpose')==='webviewView'&&u.searchParams.get('parentOrigin')==='vscode-file://vscode-app'&&u.searchParams.get('extensionId')===''?u:null;
   }catch{return null;}
 }
-function backendUrl(value){
+export function backendUrl(value){
   try{
     if(typeof value!=='string'||value.length>8192)return null;
     const u=new URL(value);
-    if(!['http:','https:'].includes(u.protocol)||!LOOPBACK.has(u.hostname)||!u.port||u.username||u.password||u.hash)return null;
+    // IDE 1.13 appends a session token fragment to the Jetski iframe src.
+    // Only that exact shape is allowed; any other hash stays rejected.
+    const trustedHash=/^#t=[0-9a-f]{16,128}$/i.test(u.hash);
+    if(!['http:','https:'].includes(u.protocol)||!LOOPBACK.has(u.hostname)||!u.port||u.username||u.password||(u.hash&&!trustedHash))return null;
     if(u.pathname!=='/'&&!/^\/c\/[0-9a-f-]+\/?$/i.test(u.pathname))return null;
     if(u.pathname!=='/'&&!GUID.test(u.pathname.split('/')[2]||''))return null;
     for(const [key,value]of Object.entries(EXPECTED_PARAMS))if(u.searchParams.getAll(key).length!==1||u.searchParams.get(key)!==value)return null;
