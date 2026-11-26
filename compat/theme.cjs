@@ -237,7 +237,12 @@ module.exports = function createAgPulseTheme() {
       if (target.dataset.pulseBarSkinned) delete target.dataset.pulseBarSkinned;
       const values=surfaceColors(theme);
       const surfaces=[values.card||palettes[theme].card,values.background||palettes[theme].background,values.control||palettes[theme].control].map(rgb);
-      const primary=(hostMatchesTheme?hostColor(['--primary','--color-primary']):null)||rgb(hostTheme[theme]?.primary);
+      let primary=(hostMatchesTheme?hostColor(['--primary','--color-primary']):null)||rgb(hostTheme[theme]?.primary);
+      // Some IDE dark themes expose a button-colored --primary (e.g. #404754 on
+      // #1a1c22, ~1.6:1) that leaves accents invisible. Require a minimum
+      // contrast against the resolved surfaces and fall back to the built-in
+      // palette accents (#85a8ff / #7ea5ff / #7688b2) when it fails.
+      if(primary&&surfaces.every(surface=>surface)&&Math.min(...surfaces.map(surface=>contrast(primary,surface)))<2.5)primary=null;
       if(primary){
         values.accent=colorCss(primary);
         values.ring=colorCss(primary);
