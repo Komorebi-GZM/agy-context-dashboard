@@ -1,5 +1,6 @@
 // Discover IDs only. Conversation bodies and SQLite contents are never read.
 import {opendir,lstat} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -13,7 +14,14 @@ async function statInfo(file,directory=false){
 const stamp=async(file,directory=false)=>(await statInfo(file,directory))?.token??null;
 export async function discoverLocalConversations({host,home=homedir(),limit=20000}={}){
  if(!['app','ide'].includes(host))throw Error('Explicit conversation host is required');
- const base=join(home,'.gemini',host==='ide'?'antigravity-ide':'antigravity');
+ // IDE 2.6 migrates conversations and brain to the shared ~/.gemini/antigravity
+ // root, leaving only an .ide_migration marker behind. Fall back to that root so
+ // cross-project history is still discovered; the legacy path stays authoritative
+ // when it still holds conversations.
+ const geminiRoot=join(home,'.gemini');
+ const legacyBase=join(geminiRoot,'antigravity-ide');
+ let base=host==='ide'?legacyBase:join(geminiRoot,'antigravity');
+ if(host==='ide'&&(!existsSync(join(legacyBase,'conversations'))&&!existsSync(join(legacyBase,'brain'))||existsSync(join(legacyBase,'.ide_migration'))))base=join(geminiRoot,'antigravity');
  const files=new Map();let errors=0,visited=0;
  for(const [name,directory] of [['conversations',false],['brain',true]]){
   const root=join(base,name);
