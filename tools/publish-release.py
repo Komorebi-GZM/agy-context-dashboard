@@ -65,6 +65,8 @@ def checked_assets(root, tag):
                      'extension/ide/manage.py', 'extension/compat/inline-widget.cjs',
                      'extension/README.md', 'extension/LICENSE']:
             archive.getinfo(name)
+        for name in ['compat/host-theme.mjs', 'compat/remote-ssh.mjs']:
+            archive.getinfo('extension/' + name)
         for name in IDE_RUNTIME_MODULES:
             archive.getinfo('extension/' + name)
         for name in ['compat/usage-ui.cjs', 'compat/host-i18n.cjs', 'compat/host-i18n-dict.json', 'sidecars/panel/rate-quality.mjs', 'sidecars/panel/usage.mjs']:
